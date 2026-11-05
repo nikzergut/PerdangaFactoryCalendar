@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PerdangaFactoryCalendar</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sidebar-title">PerdangaFactoryCalendar</div>
+        <ul id="schedule-list" class="schedule-list"></ul>
+        <div class="sidebar-actions">
+          <button id="add-schedule" class="primary">+ Новый график</button>
+          <button id="add-standard">+ 5/2 (стандартный)</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="main-header">
+          <h1 id="schedule-title"></h1>
+          <div class="header-actions">
+            <button id="rename-schedule">Переименовать</button>
+            <button id="delete-schedule" class="danger">Удалить</button>
+          </div>
+        </header>
+
+        <section class="card">
+          <div class="toolbar">
+            <div class="month-nav">
+              <button id="prev-month" title="Предыдущий месяц">‹</button>
+              <div id="month-label" class="month-label"></div>
+              <button id="next-month" title="Следующий месяц">›</button>
+              <button id="today">Сегодня</button>
+            </div>
+            <span class="hint">ЛКМ — выделить дни · ПКМ — изменить день</span>
+          </div>
+
+          <div class="weekdays">
+            <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+          </div>
+          <div id="grid" class="grid"></div>
+
+          <div class="stats">
+            <span class="stat"><b id="stat-day">0</b> дневных</span>
+            <span class="stat"><b id="stat-night">0</b> ночных</span>
+            <span class="stat"><b id="stat-off">0</b> выходных</span>
+            <span class="stat"><b id="stat-none">0</b> без отметки</span>
+          </div>
+
+          <div id="selection-bar" class="selection-bar" hidden>
+            <span id="selection-info"></span>
+            <button id="repeat-selection" class="primary">Размножить до конца года</button>
+            <button id="clear-selection">Снять выделение</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="schedule-dialog">
+      <form id="schedule-form" method="dialog">
+        <h2 id="dialog-title"></h2>
+        <input id="schedule-name" type="text" maxlength="40" required autocomplete="off" />
+        <div class="dialog-actions">
+          <button type="submit" value="save" class="primary">Сохранить</button>
+          <button type="submit" value="cancel" formnovalidate>Отмена</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="context-menu" class="context-menu" hidden></div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
