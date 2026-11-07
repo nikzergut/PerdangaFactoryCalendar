@@ -210,6 +210,8 @@ button.danger:hover {
 
 .grid {
   user-select: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .day {
@@ -400,4 +402,102 @@ dialog input:focus {
   flex-direction: row-reverse;
   gap: 8px;
   margin-top: 16px;
+}
+
+.schedule-item {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+@media (max-width: 720px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .sidebar {
+    padding: 12px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .schedule-list {
+    display: flex;
+    gap: 6px;
+    flex: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .schedule-list li + li {
+    margin-top: 0;
+  }
+
+  .schedule-item {
+    width: auto;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .sidebar-actions {
+    flex-direction: row;
+  }
+
+  #add-schedule,
+  #add-standard {
+    width: auto;
+    flex: 1;
+  }
+
+  .main {
+    padding: 12px;
+    overflow: visible;
+  }
+
+  .main-header h1 {
+    font-size: 18px;
+  }
+
+  .card {
+    max-width: none;
+    padding: 12px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .month-label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .weekdays,
+  .grid {
+    gap: 3px;
+  }
+
+  .day {
+    min-height: 52px;
+    padding: 4px;
+  }
+
+  .day[data-kind]::after {
+    display: none;
+  }
+
+  .holiday {
+    font-size: 9px;
+  }
+
+  .stats {
+    gap: 12px;
+  }
+
+  dialog {
+    width: calc(100vw - 32px);
+  }
 }

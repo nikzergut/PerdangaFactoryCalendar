@@ -216,7 +216,7 @@ async function markDays(scheduleId, keys, kind) {
     await invoke('set_days', { scheduleId, dates: keys, kind });
   } catch (err) {
     alert(`Не удалось сохранить: ${err}`);
-    await reload();
+    await reload().catch((reloadErr) => alert(`Не удалось загрузить графики: ${reloadErr}`));
   }
 }
 
@@ -292,6 +292,61 @@ function shiftMonth(delta) {
   render();
 }
 
+const LONG_PRESS_MS = 500;
+const MOVE_TOLERANCE_PX = 10;
+let press = null; // долгое нажатие пальцем: { x, y, timer }
+
+function cancelPress() {
+  if (press) clearTimeout(press.timer);
+  press = null;
+}
+
+function startPress(e, onLongPress) {
+  if (e.pointerType === 'mouse') return;
+  cancelPress();
+  const { clientX: x, clientY: y } = e;
+  press = {
+    x,
+    y,
+    timer: setTimeout(() => {
+      press = null;
+      onLongPress(x, y);
+    }, LONG_PRESS_MS),
+  };
+}
+
+function extendSelection(x, y) {
+  if (anchor === null) return;
+  const cell = document.elementFromPoint(x, y)?.closest('.day');
+  if (!cell || !el.grid.contains(cell)) return;
+  const [from, to] = [anchor, cell.dataset.date].sort();
+  if (state.selection?.from === from && state.selection?.to === to) return;
+  state.selection = { scheduleId: state.activeId, from, to };
+  refreshBoard();
+}
+
+function openCellMenu(x, y, cell) {
+  const schedule = activeSchedule();
+  if (!cell || !schedule) return;
+
+  const key = cell.dataset.date;
+  const sel = selectionInView();
+  const keys = sel && inSelection(key) ? rangeKeys(sel.from, sel.to) : [key];
+  openMenu(x, y, [
+    { label: 'День', onClick: () => markDays(schedule.id, keys, 'day') },
+    { label: 'Ночь', onClick: () => markDays(schedule.id, keys, 'night') },
+    { label: 'Выходной', onClick: () => markDays(schedule.id, keys, 'off') },
+    { label: 'Очистить', onClick: () => markDays(schedule.id, keys, null) },
+  ]);
+}
+
+function openScheduleMenu(x, y, schedule) {
+  openMenu(x, y, [
+    { label: 'Переименовать', onClick: () => openDialog('rename', schedule) },
+    { label: 'Удалить', danger: true, onClick: () => deleteSchedule(schedule) },
+  ]);
+}
+
 el.grid.addEventListener('pointerdown', (e) => {
   const cell = e.target.closest('.day');
   const schedule = activeSchedule();
@@ -300,31 +355,24 @@ el.grid.addEventListener('pointerdown', (e) => {
   anchor = cell.dataset.date;
   state.selection = { scheduleId: schedule.id, from: anchor, to: anchor };
   refreshBoard();
-});
-
-el.grid.addEventListener('pointerover', (e) => {
-  const cell = e.target.closest('.day');
-  if (anchor === null || !cell) return;
-  const [from, to] = [anchor, cell.dataset.date].sort();
-  state.selection = { scheduleId: state.activeId, from, to };
-  refreshBoard();
+  startPress(e, (x, y) => {
+    anchor = null;
+    openCellMenu(x, y, cell);
+  });
 });
 
 el.grid.addEventListener('contextmenu', (e) => {
   const cell = e.target.closest('.day');
-  const schedule = activeSchedule();
-  if (!cell || !schedule) return;
+  if (!cell || !activeSchedule()) return;
   e.preventDefault();
+  openCellMenu(e.clientX, e.clientY, cell);
+});
 
-  const key = cell.dataset.date;
-  const sel = selectionInView();
-  const keys = sel && inSelection(key) ? rangeKeys(sel.from, sel.to) : [key];
-  openMenu(e.clientX, e.clientY, [
-    { label: 'День', onClick: () => markDays(schedule.id, keys, 'day') },
-    { label: 'Ночь', onClick: () => markDays(schedule.id, keys, 'night') },
-    { label: 'Выходной', onClick: () => markDays(schedule.id, keys, 'off') },
-    { label: 'Очистить', onClick: () => markDays(schedule.id, keys, null) },
-  ]);
+el.list.addEventListener('pointerdown', (e) => {
+  const item = e.target.closest('.schedule-item');
+  const schedule = state.schedules.find((s) => s.id === item?.dataset.id);
+  if (!schedule) return;
+  startPress(e, (x, y) => openScheduleMenu(x, y, schedule));
 });
 
 el.list.addEventListener('contextmenu', (e) => {
@@ -332,23 +380,28 @@ el.list.addEventListener('contextmenu', (e) => {
   const schedule = state.schedules.find((s) => s.id === item?.dataset.id);
   if (!schedule) return;
   e.preventDefault();
-  openMenu(e.clientX, e.clientY, [
-    { label: 'Переименовать', onClick: () => openDialog('rename', schedule) },
-    { label: 'Удалить', danger: true, onClick: () => deleteSchedule(schedule) },
-  ]);
+  openScheduleMenu(e.clientX, e.clientY, schedule);
 });
 
+window.addEventListener('pointermove', (e) => {
+  if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > MOVE_TOLERANCE_PX) {
+    cancelPress();
+  }
+  extendSelection(e.clientX, e.clientY);
+});
 window.addEventListener('pointerup', () => {
   anchor = null;
+  cancelPress();
 });
 window.addEventListener('pointercancel', () => {
   anchor = null;
+  cancelPress();
 });
 window.addEventListener('pointerdown', (e) => {
   if (!el.menu.contains(e.target)) closeMenu();
 });
 window.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
+  if (e.key !== 'Escape' || el.dialog.open) return;
   closeMenu();
   clearSelection();
 });
@@ -395,5 +448,9 @@ el.form.addEventListener('submit', async (e) => {
     alert(err);
   }
 });
+
+if (matchMedia('(pointer: coarse)').matches) {
+  document.getElementById('hint').textContent = 'Протяните, чтобы выделить · долгое нажатие — изменить день';
+}
 
 reload().catch((err) => alert(`Не удалось загрузить графики: ${err}`));
